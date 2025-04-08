@@ -52,6 +52,16 @@ async def say_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await update.message.reply_text("❗️Напиши щось після /say. Наприклад: /say Привіт")
 
 
+async def tf_upper(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = context.args
+
+    if args:
+        text = " ".join(args)
+        return await update.message.reply_text(text.upper())
+    else:
+        return await update.message.reply_text("❗️Напиши щось після /tf. Наприклад: /tf привіт")
+
+
 async def start_with_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("ℹ️ Про бота", callback_data='about')],
@@ -114,6 +124,7 @@ def main():
 
     app.add_handler(CommandHandler("start", echo))
     app.add_handler(CommandHandler("say", say_command))
+    app.add_handler(CommandHandler("tf", tf_upper))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("about", about_command))
     app.add_handler(CommandHandler("menu", start_with_buttons))
