@@ -42,6 +42,16 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 
+async def say_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    args = context.args
+
+    if args:
+        text = " ".join(args)
+        return await update.message.reply_text(f"Ти сказав: {text}")
+    else:
+        return await update.message.reply_text("❗️Напиши щось після /say. Наприклад: /say Привіт")
+
+
 async def start_with_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("ℹ️ Про бота", callback_data='about')],
@@ -86,6 +96,7 @@ async def about_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(update.message.text)
 
+
 def main():
     app = ApplicationBuilder().token(os.getenv("TOKEN")).build()
 
@@ -98,8 +109,11 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)]
     )
 
+    # commands
     app.add_handler(conv_handler)
+
     app.add_handler(CommandHandler("start", echo))
+    app.add_handler(CommandHandler("say", say_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("about", about_command))
     app.add_handler(CommandHandler("menu", start_with_buttons))
