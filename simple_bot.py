@@ -10,7 +10,8 @@ from telegram.ext import (
     MessageHandler,
     ContextTypes,
     CallbackQueryHandler,
-    filters, ConversationHandler,
+    filters,
+    ConversationHandler,
 )
 
 # Load environment variables from .env file
@@ -19,16 +20,19 @@ load_dotenv()
 
 ASK_NAME, ASK_AGE = range(2)
 
+
 # 1. Start – start conversation
 async def start_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello! What is your name?")
     return ASK_NAME
+
 
 # 2. Step 1 – Get name
 async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["name"] = update.message.text
     await update.message.reply_text("Супер! А скільки тобі років?")
     return ASK_AGE
+
 
 # 3. Step 2 – get age and give response
 async def get_age(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -37,6 +41,7 @@ async def get_age(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Привіт, {name}! Тобі {age} років.")
     return ConversationHandler.END
 
+
 # 4. Canceling
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Діалог скасовано.")
@@ -44,16 +49,36 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    photo = update.message.photo[-1] # last photo in list
+    photo = update.message.photo[-1]  # last photo in list
     file = await photo.get_file()
     filename = datetime.now().strftime("photo_%Y%m%d_%H%M%S.jpg")
 
-    if not os.path.exists("media"):
-        os.makedirs("media")
+    save_dir = "media"
+    os.makedirs(save_dir, exist_ok=True)
 
-    await file.download_to_drive(f"media/{filename}.jpg")
+    save_path = os.path.join(save_dir, filename)
+    await file.download_to_drive(save_path)
     await update.message.reply_text("Фото збережено!")
     await update.message.reply_text("📸 Дякую за фото!")
+
+
+async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    doc = update.message.document
+    file = await doc.get_file()
+    original_name = doc.file_name or "unnamed"
+    name, ext = os.path.splitext(original_name)
+    name = name.replace(" ", "_")
+    ext = ext.lstrip(".")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{name}_{timestamp}.{ext}"
+
+    save_dir = "docs"
+    os.makedirs(save_dir, exist_ok=True)
+
+    save_path = os.path.join(save_dir, filename)
+    await file.download_to_drive(save_path)
+    await update.message.reply_text("📎 Отримав документ!")
+    await update.message.reply_text(f"Документ збережено як {filename}!")
 
 
 async def say_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -63,7 +88,9 @@ async def say_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = " ".join(args)
         return await update.message.reply_text(f"Ти сказав: {text}")
     else:
-        return await update.message.reply_text("❗️Напиши щось після /say. Наприклад: /say Привіт")
+        return await update.message.reply_text(
+            "❗️Напиши щось після /say. Наприклад: /say Привіт"
+        )
 
 
 async def tf_upper(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -73,14 +100,16 @@ async def tf_upper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = " ".join(args)
         return await update.message.reply_text(text.upper())
     else:
-        return await update.message.reply_text("❗️Напиши щось після /tf. Наприклад: /tf привіт")
+        return await update.message.reply_text(
+            "❗️Напиши щось після /tf. Наприклад: /tf привіт"
+        )
 
 
 async def start_with_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        [InlineKeyboardButton("ℹ️ Про бота", callback_data='about')],
-        [InlineKeyboardButton("❓️ Допомога", callback_data='help')],
-        [InlineKeyboardButton("📤 Ехо", callback_data='echo')],
+        [InlineKeyboardButton("ℹ️ Про бота", callback_data="about")],
+        [InlineKeyboardButton("❓️ Допомога", callback_data="help")],
+        [InlineKeyboardButton("📤 Ехо", callback_data="echo")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text("🔘 Обери дію:", reply_markup=reply_markup)
@@ -92,11 +121,11 @@ async def handle_button_click(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     data = query.data
 
-    if data == 'about':
+    if data == "about":
         await query.edit_message_text("🤖 Це бот Степана для навчання.")
-    elif data == 'help':
+    elif data == "help":
         await query.edit_message_text("❓ Просто натискай кнопки або пиши мені.")
-    elif data == 'echo':
+    elif data == "echo":
         await query.edit_message_text("📤 Напиши щось, і я повторю його.")
 
 
@@ -130,7 +159,7 @@ def main():
             ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
             ASK_AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_age)],
         },
-        fallbacks=[CommandHandler("cancel", cancel)]
+        fallbacks=[CommandHandler("cancel", cancel)],
     )
 
     # commands
@@ -146,6 +175,7 @@ def main():
     app.add_handler(CallbackQueryHandler(handle_button_click))
 
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+    app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     app.run_polling()
