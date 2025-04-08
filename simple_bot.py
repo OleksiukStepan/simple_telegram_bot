@@ -3,7 +3,12 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton, ReplyKeyboardMarkup,
+)
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -14,11 +19,44 @@ from telegram.ext import (
     ConversationHandler,
 )
 
-# Load environment variables from .env file
 load_dotenv()
 
 
 ASK_NAME, ASK_AGE = range(2)
+
+menu_keyboard = [
+    [KeyboardButton("📷 Надіслати фото")],
+    [KeyboardButton("📎 Надіслати документ")],
+    [KeyboardButton("🌍 Надіслати локацію")],
+    [KeyboardButton("❌ Вийти")]
+]
+
+reply_markup = ReplyKeyboardMarkup(
+    keyboard=menu_keyboard,
+    resize_keyboard=True,
+    one_time_keyboard=False
+)
+
+async def start_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Привіт! Вибери дію з меню нижче 👇",
+        reply_markup=reply_markup
+    )
+
+
+async def handle_menu_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+
+    if text == "📷 Надіслати фото":
+        await update.message.reply_text("Надішли, будь ласка, фото 📷")
+    elif text == "📎 Надіслати документ":
+        await update.message.reply_text("Надішли документ 📎")
+    elif text == "🌍 Надіслати локацію":
+        await update.message.reply_text("Поділись локацією 🌍")
+    elif text == "❌ Вийти":
+        await update.message.reply_text("Меню приховано. Напиши /start, щоб повернутись.", reply_markup=None)
+    else:
+        await update.message.reply_text("Я не розпізнав дію 🤖")
 
 
 # 1. Start – start conversation
@@ -170,7 +208,8 @@ def main():
     # commands
     app.add_handler(conv_handler)
 
-    app.add_handler(CommandHandler("start", echo))
+    # app.add_handler(CommandHandler("start", echo))
+    app.add_handler(CommandHandler("start", start_menu))
     app.add_handler(CommandHandler("say", say_command))
     app.add_handler(CommandHandler("tf", tf_upper))
     app.add_handler(CommandHandler("help", help_command))
@@ -182,7 +221,7 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu_choice))
 
     app.run_polling()
 
