@@ -9,12 +9,37 @@ from telegram.ext import (
     MessageHandler,
     ContextTypes,
     CallbackQueryHandler,
-    filters,
+    filters, ConversationHandler,
 )
 
 # Load environment variables from .env file
 load_dotenv()
 
+
+ASK_NAME, ASK_AGE = range(2)
+
+# 1. Start – start conversation
+async def start_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Hello! What is your name?")
+    return ASK_NAME
+
+# 2. Step 1 – Get name
+async def get_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["name"] = update.message.text
+    await update.message.reply_text("Супер! А скільки тобі років?")
+    return ASK_AGE
+
+# 3. Step 2 – get age and give response
+async def get_age(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    name = context.user_data.get("name")
+    age = update.message.text
+    await update.message.reply_text(f"Привіт, {name}! Тобі {age} років.")
+    return ConversationHandler.END
+
+# 4. Canceling
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Діалог скасовано.")
+    return ConversationHandler.END
 
 
 async def start_with_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -64,6 +89,16 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     app = ApplicationBuilder().token(os.getenv("TOKEN")).build()
 
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("survey", start_conversation)],
+        states={
+            ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
+            ASK_AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_age)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)]
+    )
+
+    app.add_handler(conv_handler)
     app.add_handler(CommandHandler("start", echo))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("about", about_command))
