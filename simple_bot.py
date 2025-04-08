@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 from dotenv import load_dotenv
 
@@ -40,6 +41,19 @@ async def get_age(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Діалог скасовано.")
     return ConversationHandler.END
+
+
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    photo = update.message.photo[-1] # last photo in list
+    file = await photo.get_file()
+    filename = datetime.now().strftime("photo_%Y%m%d_%H%M%S.jpg")
+
+    if not os.path.exists("media"):
+        os.makedirs("media")
+
+    await file.download_to_drive(f"media/{filename}.jpg")
+    await update.message.reply_text("Фото збережено!")
+    await update.message.reply_text("📸 Дякую за фото!")
 
 
 async def say_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -131,6 +145,7 @@ def main():
 
     app.add_handler(CallbackQueryHandler(handle_button_click))
 
+    app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     app.run_polling()
