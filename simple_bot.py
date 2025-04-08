@@ -137,7 +137,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"🌍 Твоя локація:\nШирота: {location.latitude}\nДовгота: {location.longitude}")
         context.user_data["next_action"] = None
     else:
-        await update.message.reply_text("Я не чекав фото 🤔")
+        await update.message.reply_text("Я не чекав локацію 🤔")
 
 
 async def say_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
