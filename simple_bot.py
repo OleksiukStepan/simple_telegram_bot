@@ -48,10 +48,13 @@ async def handle_menu_choice(update: Update, context: ContextTypes.DEFAULT_TYPE)
     text = update.message.text
 
     if text == "📷 Надіслати фото":
+        context.user_data["next_action"] = "photo"
         await update.message.reply_text("Надішли, будь ласка, фото 📷")
     elif text == "📎 Надіслати документ":
+        context.user_data["next_action"] = "doc"
         await update.message.reply_text("Надішли документ 📎")
     elif text == "🌍 Надіслати локацію":
+        context.user_data["next_action"] = "location"
         await update.message.reply_text("Поділись локацією 🌍")
     elif text == "❌ Вийти":
         await update.message.reply_text("Меню приховано. Напиши /start, щоб повернутись.", reply_markup=None)
@@ -87,41 +90,54 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    photo = update.message.photo[-1]  # last photo in list
-    file = await photo.get_file()
-    filename = datetime.now().strftime("photo_%Y%m%d_%H%M%S.jpg")
+    if context.user_data.get("next_action") == "photo":
+        photo = update.message.photo[-1]  # last photo in list
+        file = await photo.get_file()
+        filename = datetime.now().strftime("photo_%Y%m%d_%H%M%S.jpg")
 
-    save_dir = "media"
-    os.makedirs(save_dir, exist_ok=True)
+        save_dir = "media"
+        os.makedirs(save_dir, exist_ok=True)
 
-    save_path = os.path.join(save_dir, filename)
-    await file.download_to_drive(save_path)
-    await update.message.reply_text("Фото збережено!")
-    await update.message.reply_text("📸 Дякую за фото!")
+        save_path = os.path.join(save_dir, filename)
+        await file.download_to_drive(save_path)
+        await update.message.reply_text("Фото збережено!")
+        await update.message.reply_text("📸 Дякую за фото!")
+        context.user_data["next_action"] = None
+    else:
+        await update.message.reply_text("Я не чекав фото 🤔")
+
 
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    doc = update.message.document
-    file = await doc.get_file()
-    original_name = doc.file_name or "unnamed"
-    name, ext = os.path.splitext(original_name)
-    name = name.replace(" ", "_")
-    ext = ext.lstrip(".")
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{name}_{timestamp}.{ext}"
+    if context.user_data.get("next_action") == "doc":
+        doc = update.message.document
+        file = await doc.get_file()
+        original_name = doc.file_name or "unnamed"
+        name, ext = os.path.splitext(original_name)
+        name = name.replace(" ", "_")
+        ext = ext.lstrip(".")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{name}_{timestamp}.{ext}"
 
-    save_dir = "docs"
-    os.makedirs(save_dir, exist_ok=True)
+        save_dir = "docs"
+        os.makedirs(save_dir, exist_ok=True)
 
-    save_path = os.path.join(save_dir, filename)
-    await file.download_to_drive(save_path)
-    await update.message.reply_text("📎 Отримав документ!")
-    await update.message.reply_text(f"Документ збережено як {filename}!")
+        save_path = os.path.join(save_dir, filename)
+        await file.download_to_drive(save_path)
+        await update.message.reply_text("📎 Отримав документ!")
+        await update.message.reply_text(f"Документ збережено як {filename}!")
+        context.user_data["next_action"] = None
+    else:
+        await update.message.reply_text("Я не чекав документ 🤔")
 
 
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    location = update.message.location
-    await update.message.reply_text(f"🌍 Твоя локація:\nШирота: {location.latitude}\nДовгота: {location.longitude}")
+    if context.user_data.get("next_action") == "location":
+        location = update.message.location
+        await update.message.reply_text(f"🌍 Твоя локація:\nШирота: {location.latitude}\nДовгота: {location.longitude}")
+        context.user_data["next_action"] = None
+    else:
+        await update.message.reply_text("Я не чекав фото 🤔")
 
 
 async def say_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
