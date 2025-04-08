@@ -81,6 +81,11 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Документ збережено як {filename}!")
 
 
+async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    location = update.message.location
+    await update.message.reply_text(f"🌍 Твоя локація:\nШирота: {location.latitude}\nДовгота: {location.longitude}")
+
+
 async def say_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = context.args
 
@@ -176,6 +181,7 @@ def main():
 
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
+    app.add_handler(MessageHandler(filters.LOCATION, handle_location))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     app.run_polling()
